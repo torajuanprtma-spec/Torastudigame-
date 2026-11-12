@@ -1,0 +1,235 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TORASTUDIGAME</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#090909;color:white;
+ font-family:Arial,sans-serif;text-align:center;
+}
+header{
+ padding:22px 10px;background:#151515;
+ border-bottom:2px solid #e32636;
+}
+h1{margin:0;color:#ff3045;letter-spacing:3px}
+header p{color:#aaa;font-size:12px}
+main{max-width:480px;margin:auto;padding:15px}
+.panel{
+ background:#171717;border:1px solid #333;
+ border-radius:15px;padding:15px;margin-bottom:15px;
+}
+.score{font-size:21px;color:#ff4050;font-weight:bold}
+canvas{
+ width:100%;max-width:340px;display:block;
+ margin:12px auto;border:2px solid #444;
+ border-radius:10px;background:#222;
+}
+button{
+ border:0;border-radius:10px;padding:13px 22px;
+ background:#ed263b;color:white;font-size:15px;
+ font-weight:bold;cursor:pointer;
+}
+button:active{background:#a91022}
+.controls{
+ display:flex;justify-content:center;gap:35px;
+ margin:15px;
+}
+.controls button{width:95px;font-size:23px}
+small{color:#999}
+</style>
+</head>
+<body>
+
+<header>
+<h1>TORASTUDIGAME</h1>
+<p>RACE YOUR LIMITS • PLAY YOUR GAME</p>
+</header>
+
+<main>
+<div class="panel">
+<h2>🏁 STREET RACING</h2>
+<div class="score">SKOR: <span id="score">0</span></div>
+
+<canvas id="game" width="340" height="520"></canvas>
+
+<button id="start">▶ MULAI BALAPAN</button>
+
+<div class="controls">
+<button id="left">⬅</button>
+<button id="right">➡</button>
+</div>
+
+<small>Gunakan tombol kiri dan kanan untuk menghindari mobil.</small>
+</div>
+<p>© 2026 TORASTUDIGAME</p>
+</main>
+
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+const scoreText=document.getElementById("score");
+
+let player={x:155,y:420,w:38,h:65};
+let enemies=[];
+let score=0;
+let running=false;
+let frame=0;
+let road=0;
+let left=false,right=false;
+
+function car(x,y,color){
+ ctx.fillStyle=color;
+ ctx.fillRect(x,y,38,65);
+ ctx.fillStyle="#111";
+ ctx.fillRect(x+5,y+9,28,17);
+ ctx.fillRect(x+5,y+39,28,15);
+ ctx.fillStyle="#fff";
+ ctx.fillRect(x+3,y+2,8,4);
+ ctx.fillRect(x+27,y+2,8,4);
+}
+
+function draw(){
+ ctx.fillStyle="#333";
+ ctx.fillRect(0,0,340,520);
+
+ // Rumput
+ ctx.fillStyle="#17632b";
+ ctx.fillRect(0,0,45,520);
+ ctx.fillRect(295,0,45,520);
+
+ // Jalan
+ ctx.fillStyle="#292929";
+ ctx.fillRect(45,0,250,520);
+
+ // Garis jalan
+ ctx.fillStyle="#eee";
+ for(let y=-40;y<560;y+=90){
+   ctx.fillRect(165,y+road,6,45);
+ }
+
+ road=(road+5)%90;
+
+ // Player
+ car(player.x,player.y,"#ed263b");
+
+ // Musuh
+ enemies.forEach(e=>car(e.x,e.y,"#2588ff"));
+
+ if(!running){
+   ctx.fillStyle="rgba(0,0,0,.65)";
+   ctx.fillRect(45,190,250,110);
+   ctx.fillStyle="white";
+   ctx.textAlign="center";
+   ctx.font="bold 21px Arial";
+   ctx.fillText("TORASTUDIGAME",170,230);
+   ctx.font="14px Arial";
+   ctx.fillText("TEKAN MULAI UNTUK BALAP",170,260);
+ }
+}
+
+function update(){
+ if(!running)return;
+
+ frame++;
+
+ if(left)player.x-=5;
+ if(right)player.x+=5;
+
+ player.x=Math.max(50,Math.min(252,player.x));
+
+ if(frame%65===0){
+   enemies.push({
+     x:50+Math.floor(Math.random()*6)*40,
+     y:-70
+   });
+ }
+
+ enemies.forEach(e=>e.y+=4+Math.min(score/500,5));
+
+ enemies=enemies.filter(e=>e.y<540);
+
+ for(let e of enemies){
+   if(
+    player.x<e.x+38 &&
+    player.x+38>e.x &&
+    player.y<e.y+65 &&
+    player.y+65>e.y
+   ){
+     endGame();
+     return;
+   }
+ }
+
+ if(frame%8===0){
+   score++;
+   scoreText.textContent=score;
+ }
+
+ draw();
+ requestAnimationFrame(update);
+}
+
+function endGame(){
+ running=false;
+ draw();
+ ctx.fillStyle="white";
+ ctx.textAlign="center";
+ ctx.font="bold 25px Arial";
+ ctx.fillText("GAME OVER!",170,240);
+ ctx.font="17px Arial";
+ ctx.fillText("SKOR: "+score,170,275);
+ document.getElementById("start").textContent="↻ MAIN LAGI";
+}
+
+function startGame(){
+ if(running)return;
+ player.x=155;
+ enemies=[];
+ score=0;
+ frame=0;
+ road=0;
+ left=false;
+ right=false;
+ scoreText.textContent="0";
+ running=true;
+ draw();
+ requestAnimationFrame(update);
+}
+
+document.getElementById("start").onclick=startGame;
+
+function control(id,direction){
+ const btn=document.getElementById(id);
+ btn.addEventListener("pointerdown",e=>{
+   e.preventDefault();
+   if(direction==="left")left=true;
+   else right=true;
+ });
+ ["pointerup","pointerleave","pointercancel"].forEach(event=>{
+   btn.addEventListener(event,()=>{
+     if(direction==="left")left=false;
+     else right=false;
+   });
+ });
+}
+
+control("left","left");
+control("right","right");
+
+document.addEventListener("keydown",e=>{
+ if(e.key==="ArrowLeft"||e.key==="a")left=true;
+ if(e.key==="ArrowRight"||e.key==="d")right=true;
+});
+document.addEventListener("keyup",e=>{
+ if(e.key==="ArrowLeft"||e.key==="a")left=false;
+ if(e.key==="ArrowRight"||e.key==="d")right=false;
+});
+
+draw();
+</script>
+</body>
+</html>
